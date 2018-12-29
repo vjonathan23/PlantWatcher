@@ -1,41 +1,60 @@
-import os, pickle           # Hier werden einzelne Module importiert,
-from RPi import GPIO        # sie werden für das Programm später benötigt.
-from time import sleep      # Dazu gehören vor allem die GPIO-Schnittstellen
-GPIO.setwarnings(False)     # des Raspberry Pi’s, die daraufhin eingestellt werden.
-GPIO.setmode(GPIO.BOARD)
-GPIO.setup(12, GPIO.OUT)
+# Import von benötigten Modulen
+import os               # Befehle auf Betriebssystemebene
+import pickle           # Zugriff auf Binär-Dateien
+from RPi import GPIO    # Zugriff auf GPIO Pins des Raspberry Pi 
+from time import sleep  # Zeitdelay für LED-Ring (blinken)
 
-def blinken(zeit):              # Die Funktion „blinken“ lässt die LEDs an der Kamera
-    t = zeit                    # nach einer Zeitangabe in jeweils einer Sekunde
-    while not t <= 0:           # aufleuchten und wieder ausgehen. Dies ist praktisch,
-        GPIO.output(12, True)   # um zu erkennen, ob bald ein Foto gemacht wird.
-        sleep(0.5)
+# GPIO Initialisierung
+GPIO.setwarnings(False) 
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(12, GPIO.OUT)    # Von Pin 12 aus wird der LED-Ring angesteuert
+
+# Die Funktion *blinken* lässt den LED-Ring an der Kamera
+# über einen Zeitraum in Sekunden in jeweils einer Sekunde
+# aufleuchten und wieder ausgehen. Dies ist praktisch,
+# um zu erkennen, ob bald ein Foto gemacht wird.
+def blinken(zeit):              
+    t = zeit                    
+    while not t <= 0:           
+        GPIO.output(12, True)   
+        sleep(0.5)              
         GPIO.output(12, False)
         sleep(0.5)
         t -= 1
 
-def schiesseFoto(breite,hoehe,bildname,verzeichnis):            # Dort wird das Foto als png-file mit einer
-    befehl = "python read-sensors.py > Messwerte_Aktuell.txt"   # angegebenen Größen in einem angegeben Verzeichnis
-    os.system(befehl)                                           # geschossen und die Messwerte des Sensor-Moduls
-    with open('Messwerte_Aktuell.txt') as f:                    # werden in einer Datei abgespeichert.
-        data = f.readline()[:-1]                                # Die Messwerte sind zudem auch auf den Bildern
-    if os.path.exists(verzeichnis+"Messwerte.dat"):             # als Text darüber geschrieben.
+# In der Funktion *schiesseFoto* wird das Foto als png-File *bildname* mit einer
+# angegebenen Größen *breite/hoehe* in einem angegeben Verzeichnis *verzeichnis*
+# erstellt und die Messwerte des Sensor-Moduls werden in einer Datei abgespeichert.
+# Die Messwerte sind zudem auch auf den Bildern als Text darüber geschrieben.
+def schiesseFoto(breite,hoehe,bildname,verzeichnis):
+    # Sensordaten in eine temporäre Datei speichern
+    befehl = "python read-sensors.py > Messwerte_Aktuell.txt"   
+    os.system(befehl)
+    # Einlesen der temporären Datei mit den ermittelten Sensorwerten in die Variable *data*
+    with open('Messwerte_Aktuell.txt') as f:                    
+        data = f.readline()[:-1]
+    # Daten in zentrale Sammeldatei fortschreiben
+    if os.path.exists(verzeichnis+"Messwerte.dat"):             
+        # Vorhandene Messwert-Sammeldatei öffnen
         h = open(verzeichnis+"Messwerte.dat","rb")
         messwerte = pickle.load(h)
         h.close()
-        messwerte.append(data)
-        messwerteneu = messwerte[:]
-        g = open(verzeichnis+"Messwerte.dat","wb")
-        pickle.dump(messwerteneu,g)
-        g.close()
     else:
-        messwerteneu = []
-        messwerteneu.append(data)
-        g = open(verzeichnis+"Messwerte.dat","wb")
-        pickle.dump(messwerteneu,g)
-        g.close()
+        # Neue Datei erstellen
+        messwerte = []
+    messwerte.append(data)
+    messwerteneu = messwerte[:] #Kopie erstellen
+
+    # Messwerte in zentrale Datei speichern 
+    g = open(verzeichnis+"Messwerte.dat","wb")
+    pickle.dump(messwerteneu,g)
+    g.close()
+    
+    # LED-Ring einschalten
     GPIO.output(12, True)
+    # Foto aufnehmen und Messwerte ins Bild übernehmen
     befehl = "raspistill -ae 20,0x00 -a '%s' -w %i -h %i -e png -t 300 -o %s -n" % (data,breite,hoehe,bildname)
     os.system(befehl)
+    # LED-Ring ausschalten
     sleep(0.5)
     GPIO.output(12, False)
