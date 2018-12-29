@@ -43,7 +43,7 @@ def schiesseFoto(breite,hoehe,bildname,verzeichnis):
         # Neue Datei erstellen
         messwerte = []
     messwerte.append(data)
-    messwerteneu = messwerte[:] #Kopie erstellen
+    messwerteneu = messwerte[:] # Kopie erstellen
 
     # Messwerte in zentrale Datei speichern 
     g = open(verzeichnis+"Messwerte.dat","wb")
@@ -53,6 +53,16 @@ def schiesseFoto(breite,hoehe,bildname,verzeichnis):
     # LED-Ring einschalten
     GPIO.output(12, True)
     # Foto aufnehmen und Messwerte ins Bild übernehmen
+    # Parameter von *raspistill*
+    #   -ae Textgröße + Farbe des einzublendenden Texts
+    #   -a  Einzublendender Text (string *data*)
+    #   -w  Breite (integer *breite*)
+    #   -h  Höhe (integer *hoehe*)
+    #   -e  Dateiformart
+    #   -t  Zeitverzörgerung in Millisekunden (notwendig, da sonst Fehler auftreten)
+    #   -o  Ausgabedatei inkl. Verzeichnis (string *bildname*)
+    #   -n  Kein Preview
+    # siehe auch: https://www.raspberrypi.org/documentation/raspbian/applications/camera.md
     befehl = "raspistill -ae 20,0x00 -a '%s' -w %i -h %i -e png -t 300 -o %s -n" % (data,breite,hoehe,bildname)
     os.system(befehl)
     # LED-Ring ausschalten
